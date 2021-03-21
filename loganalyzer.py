@@ -955,6 +955,19 @@ def checkNICSpeed(lines):
                         return [LEVEL_WARNING, "Slow Network Connection", "Your gigabit-capable network card is only connecting at 100mbps. This may indicate a bad network cable or outdated router / switch which could be impacting network performance."]
     return None
 
+x264stream_re = re.compile(r"stream.+")
+
+def checkDynamicBr(lines):
+    dynBrLines = search('Dynamic bitrate enabled', lines)
+    if (len(dynBrLines) > 0):
+        x264Lines = search('x264 encoder: ', lines)
+        for i in x264Lines:
+            if x264stream_re.search(i):
+              return [LEVEL_INFO, "Dynamic Bitrate","Dynamic Bitrate is enabled. This does not resolve network issues, and will reduce bitrate (reduce quality) instead of dropping frames."]
+        else:
+            return [LEVEL_WARNING, "Dynamic Bitrate",
+                """Dynamic bitrate is enabled and a hardware encoder is potentially in use. This can cause issues with hardware encoders if bitrate changes happen too frequently, or drops too low. Should you experience bitrate dropping to zero, or no output even if OBS says its streaming, either switch to x264 or disable dynamic bitrate thru settings->Advanced, uncheck 'dynamically change bitrate'"""]
+    return None
 
 def getScenes(lines):
     scenePos = []
@@ -1166,6 +1179,7 @@ def doAnalysis(url=None, filename=None):
             messages.append(checkGameMode(logLines))
             messages.append(checkWin10Hags(logLines))
             messages.append(checkNICSpeed(logLines))
+            messages.append(checkDynamicBr(logLines))
             m = checkVideoSettings(logLines)
             for sublist in m:
                 if sublist is not None:
